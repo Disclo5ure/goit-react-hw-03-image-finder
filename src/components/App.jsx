@@ -25,25 +25,8 @@ export class App extends React.Component {
 
   async handleSubmit(e) {
     e.preventDefault();
-    this.setState({ isLoading: true, page: 1 });
     const query = e.currentTarget.query.value;
-    const response = await this.fetchData(query);
-    if (response.data.totalHits === 0) {
-      this.setState({ isLoading: false });
-      return Notify.failure(
-        `Sorry, there are no images matching your search query. Please try again.`
-      );
-    }
-    Notify.success(`Hooray! We found ${response.data.totalHits} images.`);
-    setTimeout(() => {
-      this.setState({
-        isLoading: false,
-        images: response.data.hits,
-        totalHits: response.data.totalHits,
-        query: query,
-        showLoadMore: response.data.totalHits > perPage ? true : false,
-      });
-    }, 200);
+    this.setState({ query: query, isLoading: true, page: 1 });
   }
 
   async fetchData(query, page) {
@@ -61,18 +44,9 @@ export class App extends React.Component {
 
   async loadMore() {
     this.setState({ isLoading: true });
-    const newImages = (
-      await this.fetchData(this.state.query, this.state.page + 1)
-    ).data.hits;
-    newImages.length < perPage
-      ? this.setState({ showLoadMore: false })
-      : this.setState({ showLoadMore: true });
-    this.setState(prev => {
-      return { page: prev.page + 1 };
-    });
     setTimeout(() => {
       this.setState(prev => {
-        return { images: [...prev.images, ...newImages], isLoading: false };
+        return { page: prev.page + 1 };
       });
     }, 200);
   }
@@ -89,6 +63,40 @@ export class App extends React.Component {
   openModal(url) {
     this.setState({ modalIsHidden: false, modalImage: url });
     window.addEventListener('keydown', this.handlePressEscape.bind(this));
+  }
+
+  async componentDidUpdate(_, prevState) {
+    if (prevState.query !== this.state.query) {
+      const response = await this.fetchData(this.state.query, this.state.page);
+      if (response.data.totalHits === 0) {
+        this.setState({ isLoading: false });
+        return Notify.failure(
+          `Sorry, there are no images matching your search query. Please try again.`
+        );
+      }
+      setTimeout(() => {
+        Notify.success(`Hooray! We found ${response.data.totalHits} images.`);
+        this.setState({
+          isLoading: false,
+          images: response.data.hits,
+          totalHits: response.data.totalHits,
+          showLoadMore: response.data.totalHits > perPage ? true : false,
+        });
+      }, 200);
+    }
+
+    if (prevState.page !== this.state.page && this.state.page !== 1) {
+      const newImages = (
+        await this.fetchData(this.state.query, this.state.page)
+      ).data.hits;
+      this.setState(prev => {
+        return {
+          images: [...prev.images, ...newImages],
+          isLoading: false,
+          showLoadMore: newImages.length < perPage ? false : true,
+        };
+      });
+    }
   }
 
   render() {

@@ -14,4 +14,5 @@ export const ImageGalleryItem = props => (
 ImageGalleryItem.propTypes = {
   image: PropTypes.shape(),
   openModal: PropTypes.func,
+  largeImageURL: PropTypes.string,
 };

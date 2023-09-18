@@ -21,5 +21,4 @@ export const Searchbar = props => (
 
 Searchbar.propTypes = {
   handleSubmit: PropTypes.func,
-  largeImageURL: PropTypes.string,
 };
